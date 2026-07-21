@@ -49,17 +49,18 @@ it('returns 500 JSON when repository fails', function () {
         ->assertJson(['message' => 'Failed to get net value per emiten']);
 });
 
-it('passes empty strings when query params missing', function () {
-    $this->mock(NetValuePerEmitenContract::class, function ($mock) {
-        $mock->shouldReceive('getNetValuePerEmiten')
-            ->once()
-            ->with('BBCA', '', '')
-            ->andReturn(collect());
-    });
-
+it('rejects missing, invalid, and unordered date queries', function () {
     $this->getJson('/api/v1/tren-net-value/BBCA')
-        ->assertOk()
-        ->assertJsonPath('period', ['start_date' => null, 'end_date' => null]);
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['start_date', 'end_date']);
+
+    $this->getJson('/api/v1/tren-net-value/BBCA?start_date=01-01-2024&end_date=2024-01-31')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['start_date']);
+
+    $this->getJson('/api/v1/tren-net-value/BBCA?start_date=2024-01-31&end_date=2024-01-01')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['end_date']);
 });
 
 it('returns 429 when rate limit exceeded', function () {
