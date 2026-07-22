@@ -1,0 +1,656 @@
+﻿openapi: 3.0.3
+info:
+  title: HISSA Market Analytics API
+  version: 1.0.0
+  description: |
+    HISSA API v1 documentation based on the Laravel backend implementation.
+    All endpoints are read-only, return JSON, and are available under the /api/v1 prefix.
+    Dates use the YYYY-MM-DD format. Transaction values use IDR, while ratios use percent.
+    The throttle:ip middleware limits requests per IP address according to the server configuration.
+  license: { name: Proprietary }
+servers:
+  - url: /api/v1
+    description: Active application server
+tags:
+  - {
+      name: Net Value,
+      description: Net value trends,
+      cumulative values,
+      heatmaps,
+      and rankings.,
+    }
+  - {
+      name: Foreign Flow,
+      description: Foreign and domestic investor transaction flows.,
+    }
+  - {
+      name: Market Analysis,
+      description: Combined market analysis and investor dominance ratios.,
+    }
+paths:
+  /tren-net-value/{stockCode}:
+    get:
+      tags: [Net Value]
+      operationId: getStockNetValueTrend
+      summary: Get issuer net value trend
+      description: Retrieves issuer net value data points for the selected period, ordered by date in ascending order.
+      parameters:
+        - $ref: "#/components/parameters/StockCodeCamelPath"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: The net value trend was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NetValueTrendResponse" }
+              example:
+                stock_code: BBCA
+                period: { start_date: "2026-07-01", end_date: "2026-07-03" }
+                points:
+                  [
+                    {
+                      date: "2026-07-01",
+                      stock_code: BBCA,
+                      net_value: 1250000000,
+                      classification: accumulation,
+                    },
+                  ]
+                meta: { unit: IDR }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/stocks/{stock_code}/cumulative-net-value:
+    get:
+      tags: [Net Value]
+      operationId: getStockCumulativeNetValue
+      summary: Get issuer cumulative net value
+      description: Sums daily net values and calculates the cumulative value from the beginning of the period. The stock code is converted to uppercase.
+      parameters:
+        - $ref: "#/components/parameters/StockCodePathStrict"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - name: reset
+          in: query
+          description: Cumulative value reset policy; currently only the start of the period is supported.
+          schema:
+            { type: string, enum: [start_of_period], default: start_of_period }
+      responses:
+        "200":
+          description: The cumulative net value was calculated successfully.
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/CumulativeNetValueResponse" }
+              example:
+                stock_code: BBCA
+                period: { start_date: "2026-07-01", end_date: "2026-07-03" }
+                points:
+                  [
+                    {
+                      date: "2026-07-01",
+                      daily_net_value: 1250000000,
+                      cumulative_net_value: 1250000000,
+                    },
+                  ]
+                meta:
+                  {
+                    reset_policy: start_of_period,
+                    unit: IDR,
+                    granularity: daily,
+                  }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/foreign-flow-net-value-scatter:
+    get:
+      tags: [Market Analysis, Foreign Flow]
+      operationId: getForeignFlowNetValueScatter
+      summary: Get foreign flow vs. net value scatter
+      description: Aggregates foreign and domestic net flow together with net value per stock. Results are ordered by absolute net value, foreign net flow, and then stock code. The limit is applied after sorting.
+      parameters:
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - name: aggregation
+          in: query
+          description: Aggregation method used for the selected period.
+          schema: { type: string, enum: [sum], default: sum }
+        - name: stock_codes
+          in: query
+          description: Comma-separated stock codes. Whitespace is removed, codes are converted to uppercase, and each code may contain up to 10 characters.
+          schema: { type: string, pattern: '^[A-Za-z0-9,\s]+$' }
+          example: BBCA,BBRI,TLKM
+        - name: min_abs_value
+          in: query
+          description: Absolute threshold for foreign_net_flow or net_value.
+          schema: { type: number, minimum: 0 }
+        - name: limit
+          in: query
+          description: Maximum number of items.
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: The scatter data was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/ForeignFlowScatterResponse" }
+              example:
+                period: { start_date: "2026-07-01", end_date: "2026-07-22" }
+                items:
+                  [
+                    {
+                      stock_code: BBCA,
+                      foreign_net_flow: 1800000000,
+                      domestic_net_flow: -1800000000,
+                      net_value: 2500000000,
+                      quadrant: foreign_buy_accumulation,
+                    },
+                  ]
+                meta: { unit: IDR, aggregation: sum }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/net-value-heatmap:
+    get:
+      tags: [Net Value]
+      operationId: getNetValueHeatmap
+      summary: Get net value heatmap
+      description: Retrieves a net value matrix by date and stock code. normalized_value ranges from 0 to 1 and is set to 0.5 when all values are equal. An empty dataset returns empty arrays and zero color bounds.
+      parameters:
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: The heatmap data was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HeatmapResponse" }
+              examples:
+                success:
+                  value:
+                    dates: ["2026-07-01"]
+                    stocks: [BBCA]
+                    cells:
+                      [
+                        {
+                          date: "2026-07-01",
+                          stock_code: BBCA,
+                          net_value: 1250000000,
+                          normalized_value: 0.5,
+                        },
+                      ]
+                    meta: { color_min: -1250000000, color_max: 1250000000 }
+                empty:
+                  value:
+                    {
+                      dates: [],
+                      stocks: [],
+                      cells: [],
+                      meta: { color_min: 0, color_max: 0 },
+                    }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/net-value-ranking:
+    get:
+      tags: [Net Value]
+      operationId: getNetValueRanking
+      summary: Get accumulation and distribution rankings
+      description: Aggregates net value per issuer. The response lists distribution entries followed by accumulation entries; ranking starts at 1 for each classification.
+      parameters:
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - name: limit
+          in: query
+          description: Maximum number of issuers per classification.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+      responses:
+        "200":
+          description: The net value ranking was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NetValueRankingResponse" }
+              example:
+                period: { start_date: "2026-07-01", end_date: "2026-07-22" }
+                items:
+                  [
+                    {
+                      rank: 1,
+                      stock_code: GOTO,
+                      net_value: -3200000000,
+                      classification: distribution,
+                    },
+                    {
+                      rank: 1,
+                      stock_code: BBCA,
+                      net_value: 2500000000,
+                      classification: accumulation,
+                    },
+                  ]
+                meta: { limit: 10, aggregation: sum, unit: IDR }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/stocks/{stock_code}/investor/net-flow:
+    get:
+      tags: [Foreign Flow]
+      operationId: getStockInvestorNetFlow
+      summary: Get issuer foreign and domestic net flow
+      description: Aggregates daily foreign and domestic net flow for an issuer, ordered by date in ascending order.
+      parameters:
+        - $ref: "#/components/parameters/StockCodePath"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - $ref: "#/components/parameters/DailyGranularity"
+      responses:
+        "200":
+          description: The investor net flow was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvestorNetFlowResponse" }
+              example:
+                stock_code: BBCA
+                points:
+                  [
+                    {
+                      date: "2026-07-01",
+                      foreign_net_flow: 900000000,
+                      domestic_net_flow: -900000000,
+                    },
+                  ]
+                meta: { unit: IDR, granularity: daily }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/stocks/{stock_code}/foreign/gross-flow:
+    get:
+      tags: [Foreign Flow]
+      operationId: getStockForeignGrossFlow
+      summary: Get foreign investor gross flow
+      description: Aggregates daily foreign buy, foreign sell, and foreign net flow for an issuer, ordered by date in ascending order.
+      parameters:
+        - $ref: "#/components/parameters/StockCodePath"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - $ref: "#/components/parameters/DailyGranularity"
+      responses:
+        "200":
+          description: The foreign investor gross flow was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ForeignGrossFlowResponse" }
+              example:
+                stock_code: BBCA
+                points:
+                  [
+                    {
+                      date: "2026-07-01",
+                      foreign_buy: 2400000000,
+                      foreign_sell: 1500000000,
+                      foreign_net_flow: 900000000,
+                    },
+                  ]
+                meta: { unit: IDR, granularity: daily }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /market/dominance-ratio:
+    get:
+      tags: [Market Analysis]
+      operationId: getDominanceRatio
+      summary: Get investor dominance ratio
+      description: Retrieves institutional, retail, and mixed ratios. total_ratio is the sum of all three values.
+      parameters:
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - name: stock_code
+          in: query
+          description: Optional stock code with a maximum length of 10 characters.
+          schema: { type: string, maxLength: 10 }
+      responses:
+        "200":
+          description: The dominance ratio was retrieved successfully.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DominanceRatioResponse" }
+              example:
+                items:
+                  [
+                    {
+                      date: "2026-07-01",
+                      stock_code: BBCA,
+                      institution: 52.5,
+                      retail: 35,
+                      mixed: 12.5,
+                      total_ratio: 100,
+                    },
+                  ]
+                meta: { ratio_basis: transaction_value, unit: percent }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+components:
+  parameters:
+    StartDate:
+      name: start_date
+      in: query
+      required: true
+      description: Start date of the period, inclusive.
+      schema: { type: string, format: date }
+      example: "2026-07-01"
+    EndDate:
+      name: end_date
+      in: query
+      required: true
+      description: End date of the period, inclusive, and must not be earlier than start_date.
+      schema: { type: string, format: date }
+      example: "2026-07-22"
+    StockCodeCamelPath:
+      name: stockCode
+      in: path
+      required: true
+      description: Stock code as stored in the source data.
+      schema: { type: string }
+      example: BBCA
+    StockCodePath:
+      name: stock_code
+      in: path
+      required: true
+      description: Stock code with a maximum length of 10 characters.
+      schema: { type: string, maxLength: 10 }
+      example: BBCA
+    StockCodePathStrict:
+      name: stock_code
+      in: path
+      required: true
+      description: Alphanumeric stock code with a maximum length of 10 characters.
+      schema:
+        {
+          type: string,
+          minLength: 1,
+          maxLength: 10,
+          pattern: "^[A-Za-z0-9]{1,10}$",
+        }
+      example: BBCA
+    DailyGranularity:
+      name: granularity
+      in: query
+      description: Data granularity; currently only daily granularity is supported.
+      schema: { type: string, enum: [daily], default: daily }
+  responses:
+    ValidationError:
+      description: A path or query parameter failed validation.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ValidationError" }
+          example:
+            success: false
+            message: Validation failed.
+            errors:
+              end_date:
+                [
+                  The end date field must be a date after or equal to the start date.,
+                ]
+    TooManyRequests:
+      description: The request exceeded the IP-based rate limit.
+      headers:
+        X-RateLimit-Limit:
+          {
+            description: Maximum requests in the window.,
+            schema: { type: integer },
+          }
+        Retry-After:
+          {
+            description: Seconds recommended before retrying.,
+            schema: { type: integer },
+          }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ProblemMessage" }
+          example: { message: Too Many Attempts. }
+    InternalServerError:
+      description: A query, domain process, or server operation failed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ServerError" }
+          example: { success: false, message: An unexpected error occurred. }
+  schemas:
+    DatePeriod:
+      type: object
+      additionalProperties: false
+      required: [start_date, end_date]
+      properties:
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+    IdMeta:
+      type: object
+      additionalProperties: false
+      required: [unit]
+      properties: { unit: { type: string, enum: [IDR] } }
+    DailyIdMeta:
+      type: object
+      additionalProperties: false
+      required: [unit, granularity]
+      properties:
+        unit: { type: string, enum: [IDR] }
+        granularity: { type: string, enum: [daily] }
+    NetValueTrendPoint:
+      type: object
+      required: [date, stock_code, net_value, classification]
+      properties:
+        date: { type: string, format: date }
+        stock_code: { type: string }
+        net_value: { type: integer, format: int64 }
+        classification:
+          {
+            type: string,
+            description: Source-data classification,
+            typically accumulation or distribution.,
+          }
+    NetValueTrendResponse:
+      type: object
+      required: [stock_code, period, points, meta]
+      properties:
+        stock_code: { type: string }
+        period: { $ref: "#/components/schemas/DatePeriod" }
+        points:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/NetValueTrendPoint" },
+          }
+        meta: { $ref: "#/components/schemas/IdMeta" }
+    CumulativeNetValuePoint:
+      type: object
+      required: [date, daily_net_value, cumulative_net_value]
+      properties:
+        date: { type: string, format: date }
+        daily_net_value: { type: integer, format: int64 }
+        cumulative_net_value: { type: integer, format: int64 }
+    CumulativeNetValueResponse:
+      type: object
+      required: [stock_code, period, points, meta]
+      properties:
+        stock_code: { type: string }
+        period: { $ref: "#/components/schemas/DatePeriod" }
+        points:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CumulativeNetValuePoint" },
+          }
+        meta:
+          type: object
+          required: [reset_policy, unit, granularity]
+          properties:
+            reset_policy: { type: string, enum: [start_of_period] }
+            unit: { type: string, enum: [IDR] }
+            granularity: { type: string, enum: [daily] }
+    ForeignFlowScatterItem:
+      type: object
+      required:
+        [stock_code, foreign_net_flow, net_value, domestic_net_flow, quadrant]
+      properties:
+        stock_code: { type: string }
+        foreign_net_flow: { type: integer, format: int64 }
+        net_value: { type: integer, format: int64 }
+        domestic_net_flow: { type: integer, format: int64 }
+        quadrant:
+          type: string
+          enum:
+            [
+              foreign_buy_accumulation,
+              foreign_sell_distribution,
+              foreign_buy_distribution,
+              foreign_sell_accumulation,
+            ]
+    ForeignFlowScatterResponse:
+      type: object
+      required: [period, items, meta]
+      properties:
+        period: { $ref: "#/components/schemas/DatePeriod" }
+        items:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/ForeignFlowScatterItem" },
+          }
+        meta:
+          type: object
+          required: [unit, aggregation]
+          properties:
+            unit: { type: string, enum: [IDR] }
+            aggregation: { type: string, enum: [sum] }
+    HeatmapCell:
+      type: object
+      required: [date, stock_code, net_value, normalized_value]
+      properties:
+        date: { type: string, format: date }
+        stock_code: { type: string }
+        net_value: { type: integer, format: int64 }
+        normalized_value:
+          { type: number, format: float, minimum: 0, maximum: 1 }
+    HeatmapResponse:
+      type: object
+      required: [dates, stocks, cells, meta]
+      properties:
+        dates:
+          {
+            type: array,
+            uniqueItems: true,
+            items: { type: string, format: date },
+          }
+        stocks: { type: array, uniqueItems: true, items: { type: string } }
+        cells:
+          { type: array, items: { $ref: "#/components/schemas/HeatmapCell" } }
+        meta:
+          type: object
+          required: [color_min, color_max]
+          properties:
+            color_min: { type: integer, format: int64, maximum: 0 }
+            color_max: { type: integer, format: int64, minimum: 0 }
+    NetValueRankingItem:
+      type: object
+      required: [rank, stock_code, net_value, classification]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        stock_code: { type: string }
+        net_value: { type: integer, format: int64 }
+        classification: { type: string, enum: [distribution, accumulation] }
+    NetValueRankingResponse:
+      type: object
+      required: [period, items, meta]
+      properties:
+        period: { $ref: "#/components/schemas/DatePeriod" }
+        items:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/NetValueRankingItem" },
+          }
+        meta:
+          type: object
+          required: [limit, aggregation, unit]
+          properties:
+            limit: { type: integer, minimum: 1, maximum: 100 }
+            aggregation: { type: string, enum: [sum] }
+            unit: { type: string, enum: [IDR] }
+    InvestorNetFlowPoint:
+      type: object
+      required: [date, foreign_net_flow, domestic_net_flow]
+      properties:
+        date: { type: string, format: date }
+        foreign_net_flow: { type: integer, format: int64 }
+        domestic_net_flow: { type: integer, format: int64 }
+    InvestorNetFlowResponse:
+      type: object
+      required: [stock_code, points, meta]
+      properties:
+        stock_code: { type: string }
+        points:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/InvestorNetFlowPoint" },
+          }
+        meta: { $ref: "#/components/schemas/DailyIdMeta" }
+    ForeignGrossFlowPoint:
+      type: object
+      required: [date, foreign_buy, foreign_sell, foreign_net_flow]
+      properties:
+        date: { type: string, format: date }
+        foreign_buy: { type: integer, format: int64, minimum: 0 }
+        foreign_sell: { type: integer, format: int64, minimum: 0 }
+        foreign_net_flow: { type: integer, format: int64 }
+    ForeignGrossFlowResponse:
+      type: object
+      required: [stock_code, points, meta]
+      properties:
+        stock_code: { type: string }
+        points:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/ForeignGrossFlowPoint" },
+          }
+        meta: { $ref: "#/components/schemas/DailyIdMeta" }
+    DominanceRatioItem:
+      type: object
+      required: [date, stock_code, institution, retail, mixed, total_ratio]
+      properties:
+        date: { type: string, format: date }
+        stock_code: { type: string }
+        institution: { type: number, format: double }
+        retail: { type: number, format: double }
+        mixed: { type: number, format: double }
+        total_ratio: { type: number, format: double }
+    DominanceRatioResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/DominanceRatioItem" },
+          }
+        meta:
+          type: object
+          required: [ratio_basis, unit]
+          properties:
+            ratio_basis: { type: string, enum: [transaction_value] }
+            unit: { type: string, enum: [percent] }
+    ValidationError:
+      type: object
+      required: [success, message, errors]
+      properties:
+        success: { type: boolean, enum: [false] }
+        message: { type: string, enum: [Validation failed.] }
+        errors:
+          type: object
+          additionalProperties:
+            { type: array, minItems: 1, items: { type: string } }
+    ServerError:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean, enum: [false] }
+        message: { type: string }
+    ProblemMessage:
+      type: object
+      required: [message]
+      properties: { message: { type: string } }
