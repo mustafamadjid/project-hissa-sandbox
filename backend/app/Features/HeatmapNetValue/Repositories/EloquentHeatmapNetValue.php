@@ -21,4 +21,27 @@ final class EloquentHeatmapNetValue implements HeatmapNetValueContract
             ->orderBy('netbs_stock_code')
             ->get();
     }
+
+    #[Override]
+    public function getDistinctDates(string $startDate, string $endDate): array
+    {
+        return HeatmapNetValue::query()
+            ->whereBetween('netbs_date', [$startDate, $endDate])
+            ->distinct()
+            ->orderBy('netbs_date')
+            ->pluck('netbs_date')
+            ->map(fn ($date) => $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : (string) $date)
+            ->toArray();
+    }
+
+    #[Override]
+    public function getDistinctStocks(string $startDate, string $endDate): array
+    {
+        return HeatmapNetValue::query()
+            ->whereBetween('netbs_date', [$startDate, $endDate])
+            ->distinct()
+            ->orderBy('netbs_stock_code')
+            ->pluck('netbs_stock_code')
+            ->toArray();
+    }
 }

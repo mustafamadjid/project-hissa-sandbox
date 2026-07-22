@@ -35,19 +35,8 @@ final class HeatmapNetValueService
             $max = $netValues->max();
             $range = $max - $min;
 
-            $dates = $rows
-                ->map(fn ($row) => $this->dateString($row->netbs_date))
-                ->unique()
-                ->sort()
-                ->values()
-                ->all();
-
-            $stocks = $rows
-                ->map(fn ($row) => $row->stock_code)
-                ->unique()
-                ->sort()
-                ->values()
-                ->all();
+            $dates = $this->repository->getDistinctDates($startDate, $endDate);
+            $stocks = $this->repository->getDistinctStocks($startDate, $endDate);
 
             $cells = $rows
                 ->map(fn ($row) => [
