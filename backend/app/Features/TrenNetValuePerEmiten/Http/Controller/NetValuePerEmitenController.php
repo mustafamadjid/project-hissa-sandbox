@@ -49,6 +49,10 @@ final class NetValuePerEmitenController extends Controller
             report($exception);
 
             return $this->serverError($exception->getMessage());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return $this->serverError('Terjadi kesalahan tak terduga.');
         }
     }
 }
