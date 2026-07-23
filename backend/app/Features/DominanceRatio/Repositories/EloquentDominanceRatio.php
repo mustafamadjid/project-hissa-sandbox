@@ -14,13 +14,15 @@ final class EloquentDominanceRatio implements DominanceRatioContract
     {
         return DominanceRatio::query()
             ->select([
-                'netbs_date',
+                'netbs_date as date',
                 'netbs_stock_code as stock_code',
-                'netval as net_value',
+                'Institusi as institution',
+                'Retail as retail',
+                'Mixed as mixed',
             ])
             ->whereBetween('netbs_date', [$startDate, $endDate])
             ->orderBy('netbs_date')
-            ->orderBy('netbs_stock_code')
+            ->orderBy('stock_code')
             ->get();
     }
 }
