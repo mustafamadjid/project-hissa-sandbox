@@ -21,8 +21,8 @@ it('adds separate ranks and classifications for both sides of zero', function ()
         ->getTopAccumulationDistribution('2026-07-01', '2026-07-20', 10);
 
     expect($result)->toBe([
-        ['rank' => 1, 'stock_code' => 'ASII', 'net_value' => -42000000000, 'classification' => 'distribusi'],
-        ['rank' => 1, 'stock_code' => 'BBRI', 'net_value' => 48000000000, 'classification' => 'akumulasi'],
+        ['rank' => 1, 'stock_code' => 'ASII', 'net_value' => -42000000000, 'classification' => 'distribution'],
+        ['rank' => 1, 'stock_code' => 'BBRI', 'net_value' => 48000000000, 'classification' => 'accumulation'],
     ]);
 });
 

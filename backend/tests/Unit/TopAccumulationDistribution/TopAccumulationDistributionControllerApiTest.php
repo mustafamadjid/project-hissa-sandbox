@@ -18,8 +18,8 @@ it('returns ranked accumulation and distribution response', function () {
         ->assertJson([
             'period' => ['start_date' => '2026-07-01', 'end_date' => '2026-07-20'],
             'items' => [
-                ['rank' => 1, 'stock_code' => 'ASII', 'net_value' => -42000000000, 'classification' => 'distribusi'],
-                ['rank' => 1, 'stock_code' => 'BBRI', 'net_value' => 48000000000, 'classification' => 'akumulasi'],
+                ['rank' => 1, 'stock_code' => 'ASII', 'net_value' => -42000000000, 'classification' => 'distribution'],
+                ['rank' => 1, 'stock_code' => 'BBRI', 'net_value' => 48000000000, 'classification' => 'accumulation'],
             ],
             'meta' => ['limit' => 10, 'aggregation' => 'sum', 'unit' => 'IDR'],
         ]);

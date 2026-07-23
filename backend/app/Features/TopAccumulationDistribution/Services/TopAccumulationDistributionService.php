@@ -19,8 +19,8 @@ final class TopAccumulationDistributionService
             $rankedStocks = $this->repository->getTopAccumulationDistribution($startDate, $endDate, $limit);
 
             return [
-                ...$this->withRanks($rankedStocks['distribution'], 'distribusi'),
-                ...$this->withRanks($rankedStocks['accumulation'], 'akumulasi'),
+                ...$this->withRanks($rankedStocks['distribution'], 'distribution'),
+                ...$this->withRanks($rankedStocks['accumulation'], 'accumulation'),
             ];
         } catch (\Throwable $exception) {
             Log::error('Failed to get top accumulation distribution', ['exception' => $exception]);
