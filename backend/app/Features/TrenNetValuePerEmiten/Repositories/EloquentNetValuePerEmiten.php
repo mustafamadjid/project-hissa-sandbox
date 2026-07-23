@@ -15,8 +15,8 @@ final class EloquentNetValuePerEmiten implements NetValuePerEmitenContract
             'netbs_date as date',
             'netbs_stock_code as stock_code',
             'netval as net_value',
-            'stock_acc/dist as classification',
         ])
+        ->selectRaw('`stock_acc/dist` as classification')
         ->whereBetween('netbs_date', [$startDate, $endDate])
         ->where('netbs_stock_code', $stockCode)
         ->orderBy('netbs_date')
