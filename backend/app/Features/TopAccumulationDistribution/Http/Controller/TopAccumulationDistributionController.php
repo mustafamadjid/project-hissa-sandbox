@@ -27,17 +27,18 @@ final class TopAccumulationDistributionController extends Controller
 
             $validated = $validator->validate();
             $limit = (int) ($validated['limit'] ?? 10);
+            $items = $this->service->getTopAccumulationDistribution(
+                $validated['start_date'],
+                $validated['end_date'],
+                $limit,
+            );
 
             return response()->json([
                 'period' => [
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
                 ],
-                'items' => $this->service->getTopAccumulationDistribution(
-                    $validated['start_date'],
-                    $validated['end_date'],
-                    $limit,
-                ),
+                'items' => $items,
                 'meta' => [
                     'limit' => $limit,
                     'aggregation' => 'sum',

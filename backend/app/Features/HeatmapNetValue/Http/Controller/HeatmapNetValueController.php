@@ -22,13 +22,12 @@ final class HeatmapNetValueController extends Controller
                 'start_date' => ['required', 'date_format:Y-m-d'],
                 'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             ]);
-
-            return response()->json(
-                $this->service->getHeatmapData(
-                    $validated['start_date'],
-                    $validated['end_date'],
-                ),
+            $heatmapData = $this->service->getHeatmapData(
+                $validated['start_date'],
+                $validated['end_date'],
             );
+
+            return response()->json($heatmapData);
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (HeatmapNetValueException $exception) {

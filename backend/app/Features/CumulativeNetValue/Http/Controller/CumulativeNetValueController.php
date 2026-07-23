@@ -31,6 +31,11 @@ final class CumulativeNetValueController extends Controller
 
             $validated = $validator->validate();
             $stockCode = strtoupper($validated['stock_code']);
+            $cumulativeNetValue = $this->service->getCumulativeNetValue(
+                $stockCode,
+                $validated['start_date'],
+                $validated['end_date'],
+            );
 
             return response()->json([
                 'stock_code' => $stockCode,
@@ -38,11 +43,7 @@ final class CumulativeNetValueController extends Controller
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
                 ],
-                'points' => $this->service->getCumulativeNetValue(
-                    $stockCode,
-                    $validated['start_date'],
-                    $validated['end_date'],
-                ),
+                'points' => $cumulativeNetValue,
                 'meta' => [
                     'reset_policy' => $validated['reset'] ?? 'start_of_period',
                     'unit' => 'IDR',

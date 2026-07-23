@@ -31,13 +31,16 @@ final class ForeignDomesticNetFlowController extends Controller
 
             $validated = $validator->validate();
 
+            $stockCode = strtoupper($validated['stock_code']);
+            $netFlow = $this->service->getNetFlow(
+                $stockCode,
+                $validated['start_date'],
+                $validated['end_date'],
+            );
+
             return response()->json([
-                'stock_code' => $validated['stock_code'],
-                'points' => $this->service->getNetFlow(
-                    $validated['stock_code'],
-                    $validated['start_date'],
-                    $validated['end_date'],
-                ),
+                'stock_code' => $stockCode,
+                'points' => $netFlow,
                 'meta' => [
                     'unit' => 'IDR',
                     'granularity' => $validated['granularity'] ?? 'daily',

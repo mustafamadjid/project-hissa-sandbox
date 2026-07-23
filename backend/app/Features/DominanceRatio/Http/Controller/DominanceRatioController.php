@@ -26,13 +26,17 @@ final class DominanceRatioController extends Controller
             ]);
 
             $validated = $validator->validate();
+            $stockCode = isset($validated['stock_code'])
+                ? strtoupper($validated['stock_code'])
+                : null;
+            $items = $this->service->getDominanceRatio(
+                $validated['start_date'],
+                $validated['end_date'],
+                $stockCode,
+            );
 
             return response()->json([
-                'items' => $this->service->getDominanceRatio(
-                    $validated['start_date'],
-                    $validated['end_date'],
-                    $validated['stock_code'] ?? null,
-                ),
+                'items' => $items,
                 'meta' => [
                     'ratio_basis' => 'transaction_value',
                     'unit' => 'percent',

@@ -25,6 +25,7 @@ final class NetValuePerEmitenController extends Controller
             ]);
 
             $validated = $validator->validate();
+            $stockCode = strtoupper($stockCode);
 
             $data = $this->service->getNetValuePerEmiten(
                 $stockCode,

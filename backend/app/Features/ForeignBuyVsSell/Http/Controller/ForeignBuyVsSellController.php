@@ -31,13 +31,16 @@ final class ForeignBuyVsSellController extends Controller
 
             $validated = $validator->validate();
 
+            $stockCode = strtoupper($validated['stock_code']);
+            $grossFlow = $this->service->getGrossFlow(
+                $stockCode,
+                $validated['start_date'],
+                $validated['end_date'],
+            );
+
             return response()->json([
-                'stock_code' => $validated['stock_code'],
-                'points' => $this->service->getGrossFlow(
-                    $validated['stock_code'],
-                    $validated['start_date'],
-                    $validated['end_date'],
-                ),
+                'stock_code' => $stockCode,
+                'points' => $grossFlow,
                 'meta' => [
                     'unit' => 'IDR',
                     'granularity' => $validated['granularity'] ?? 'daily',
