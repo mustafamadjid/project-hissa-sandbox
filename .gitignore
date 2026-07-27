@@ -1,4 +1,5 @@
 *.md
 graphify-out/
 *.codex
+*.agents
 skills-lock.json
