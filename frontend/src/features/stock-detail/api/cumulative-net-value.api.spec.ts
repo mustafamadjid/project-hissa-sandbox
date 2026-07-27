@@ -1,0 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/shared/api/http-client", () => ({ httpClient: { get: vi.fn() }, toApiError: (error: unknown) => error, withRequestSignal: () => ({}) }));
+import { httpClient } from "@/shared/api/http-client";
+import { fetchCumulativeNetValue } from "./cumulative-net-value.api";
+describe("fetchCumulativeNetValue", () => { beforeEach(() => vi.mocked(httpClient.get).mockReset()); it("serializes path and query", async () => { vi.mocked(httpClient.get).mockResolvedValue({ data: { stock_code: "BBRI", period: { start_date: "2026-07-01", end_date: "2026-07-10" }, points: [], meta: { reset_policy: "start_of_period", unit: "IDR", granularity: "daily" } } }); await fetchCumulativeNetValue({ stock_code: "BBRI", start_date: "2026-07-01", end_date: "2026-07-10" }); expect(httpClient.get).toHaveBeenCalledWith("/market/stocks/BBRI/cumulative-net-value", expect.objectContaining({ params: { start_date: "2026-07-01", end_date: "2026-07-10", reset: "start_of_period" } })); }); });

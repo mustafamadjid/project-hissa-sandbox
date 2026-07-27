@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 final class DominanceRatioController extends Controller
 {
+
     public function __construct(
         private readonly DominanceRatioService $service,
     ) {}
