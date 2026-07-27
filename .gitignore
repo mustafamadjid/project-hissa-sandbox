@@ -1,2 +1,4 @@
 *.md
-
+graphify-out/
+*.codex
+skills-lock.json
