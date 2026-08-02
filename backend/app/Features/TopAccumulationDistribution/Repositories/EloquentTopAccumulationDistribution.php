@@ -4,6 +4,7 @@ namespace App\Features\TopAccumulationDistribution\Repositories;
 
 use App\Features\TopAccumulationDistribution\Contracts\TopAccumulationDistributionContract;
 use App\Features\TopAccumulationDistribution\Models\TopAccumulationDistribution;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Support\Collection;
 use Override;
 
@@ -12,10 +13,13 @@ final class EloquentTopAccumulationDistribution implements TopAccumulationDistri
     #[Override]
     public function getTopAccumulationDistribution(string $startDate, string $endDate, int $limit): array
     {
-        return [
-            'distribution' => $this->rankedStocks($startDate, $endDate, '<', 'asc', $limit),
-            'accumulation' => $this->rankedStocks($startDate, $endDate, '>', 'desc', $limit),
-        ];
+        return PerformanceTracker::measure(
+            'EloquentTopAccumulationDistribution@getTopAccumulationDistribution',
+            fn (): array => [
+                'distribution' => $this->rankedStocks($startDate, $endDate, '<', 'asc', $limit),
+                'accumulation' => $this->rankedStocks($startDate, $endDate, '>', 'desc', $limit),
+            ],
+        );
     }
 
     private function rankedStocks(

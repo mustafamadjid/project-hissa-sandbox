@@ -15,6 +15,14 @@ it('builds dates, stocks, normalized cells, and symmetric color bounds', functio
             (object) ['netbs_date' => '2026-07-17', 'stock_code' => 'BBRI', 'net_value' => '2500000000'],
             (object) ['netbs_date' => '2026-07-18', 'stock_code' => 'TLKM', 'net_value' => '-1500000000'],
         ]));
+    $repository->shouldReceive('getDistinctDates')
+        ->once()
+        ->with('2026-07-17', '2026-07-18')
+        ->andReturn(['2026-07-17', '2026-07-18']);
+    $repository->shouldReceive('getDistinctStocks')
+        ->once()
+        ->with('2026-07-17', '2026-07-18')
+        ->andReturn(['BBRI', 'TLKM']);
     App::instance(HeatmapNetValueContract::class, $repository);
 
     $result = App::make(HeatmapNetValueService::class)

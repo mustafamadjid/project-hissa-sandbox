@@ -5,6 +5,7 @@ namespace App\Features\TopAccumulationDistribution\Http\Controller;
 use App\Features\TopAccumulationDistribution\Exceptions\TopAccumulationDistributionException;
 use App\Features\TopAccumulationDistribution\Services\TopAccumulationDistributionService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -27,24 +28,30 @@ final class TopAccumulationDistributionController extends Controller
 
             $validated = $validator->validate();
             $limit = (int) ($validated['limit'] ?? 10);
-            $items = $this->service->getTopAccumulationDistribution(
-                $validated['start_date'],
-                $validated['end_date'],
-                $limit,
-            );
 
-            return response()->json([
-                'period' => [
-                    'start_date' => $validated['start_date'],
-                    'end_date' => $validated['end_date'],
-                ],
-                'items' => $items,
-                'meta' => [
-                    'limit' => $limit,
-                    'aggregation' => 'sum',
-                    'unit' => 'IDR',
-                ],
-            ]);
+            return PerformanceTracker::measure(
+                'TopAccumulationDistributionController@__invoke',
+                function () use ($validated, $limit): JsonResponse {
+                    $items = $this->service->getTopAccumulationDistribution(
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $limit,
+                    );
+
+                    return response()->json([
+                        'period' => [
+                            'start_date' => $validated['start_date'],
+                            'end_date' => $validated['end_date'],
+                        ],
+                        'items' => $items,
+                        'meta' => [
+                            'limit' => $limit,
+                            'aggregation' => 'sum',
+                            'unit' => 'IDR',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (TopAccumulationDistributionException $exception) {

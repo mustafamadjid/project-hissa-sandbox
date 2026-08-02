@@ -4,6 +4,7 @@ namespace App\Features\TopAccumulationDistribution\Services;
 
 use App\Features\TopAccumulationDistribution\Contracts\TopAccumulationDistributionContract;
 use App\Features\TopAccumulationDistribution\Exceptions\TopAccumulationDistributionException;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -15,22 +16,27 @@ final class TopAccumulationDistributionService
 
     public function getTopAccumulationDistribution(string $startDate, string $endDate, int $limit): array
     {
-        try {
-            $rankedStocks = $this->repository->getTopAccumulationDistribution($startDate, $endDate, $limit);
+        return PerformanceTracker::measure(
+            'TopAccumulationDistributionService@getTopAccumulationDistribution',
+            function () use ($startDate, $endDate, $limit): array {
+                try {
+                    $rankedStocks = $this->repository->getTopAccumulationDistribution($startDate, $endDate, $limit);
 
-            return [
-                ...$this->withRanks($rankedStocks['distribution'], 'distribution'),
-                ...$this->withRanks($rankedStocks['accumulation'], 'accumulation'),
-            ];
-        } catch (\Throwable $exception) {
-            Log::error('Failed to get top accumulation distribution', ['exception' => $exception]);
+                    return [
+                        ...$this->withRanks($rankedStocks['distribution'], 'distribution'),
+                        ...$this->withRanks($rankedStocks['accumulation'], 'accumulation'),
+                    ];
+                } catch (\Throwable $exception) {
+                    Log::error('Failed to get top accumulation distribution', ['exception' => $exception]);
 
-            throw new TopAccumulationDistributionException(
-                'Failed to get top accumulation distribution',
-                0,
-                $exception,
-            );
-        }
+                    throw new TopAccumulationDistributionException(
+                        'Failed to get top accumulation distribution',
+                        0,
+                        $exception,
+                    );
+                }
+            },
+        );
     }
 
     private function withRanks(Collection $stocks, string $classification): array

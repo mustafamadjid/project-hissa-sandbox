@@ -5,6 +5,7 @@ namespace App\Features\CumulativeNetValue\Http\Controller;
 use App\Features\CumulativeNetValue\Exceptions\CumulativeNetValueException;
 use App\Features\CumulativeNetValue\Services\CumulativeNetValueService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -31,25 +32,31 @@ final class CumulativeNetValueController extends Controller
 
             $validated = $validator->validate();
             $stockCode = strtoupper($validated['stock_code']);
-            $cumulativeNetValue = $this->service->getCumulativeNetValue(
-                $stockCode,
-                $validated['start_date'],
-                $validated['end_date'],
-            );
 
-            return response()->json([
-                'stock_code' => $stockCode,
-                'period' => [
-                    'start_date' => $validated['start_date'],
-                    'end_date' => $validated['end_date'],
-                ],
-                'points' => $cumulativeNetValue,
-                'meta' => [
-                    'reset_policy' => $validated['reset'] ?? 'start_of_period',
-                    'unit' => 'IDR',
-                    'granularity' => 'daily',
-                ],
-            ]);
+            return PerformanceTracker::measure(
+                'CumulativeNetValueController@__invoke',
+                function () use ($validated, $stockCode): JsonResponse {
+                    $cumulativeNetValue = $this->service->getCumulativeNetValue(
+                        $stockCode,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                    );
+
+                    return response()->json([
+                        'stock_code' => $stockCode,
+                        'period' => [
+                            'start_date' => $validated['start_date'],
+                            'end_date' => $validated['end_date'],
+                        ],
+                        'points' => $cumulativeNetValue,
+                        'meta' => [
+                            'reset_policy' => $validated['reset'] ?? 'start_of_period',
+                            'unit' => 'IDR',
+                            'granularity' => 'daily',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (CumulativeNetValueException $exception) {

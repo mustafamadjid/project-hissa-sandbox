@@ -5,6 +5,7 @@ namespace App\Features\ForeignBuyVsSell\Http\Controller;
 use App\Features\ForeignBuyVsSell\Exceptions\ForeignBuyVsSellException;
 use App\Features\ForeignBuyVsSell\Services\ForeignBuyVsSellService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,20 +33,26 @@ final class ForeignBuyVsSellController extends Controller
             $validated = $validator->validate();
 
             $stockCode = strtoupper($validated['stock_code']);
-            $grossFlow = $this->service->getGrossFlow(
-                $stockCode,
-                $validated['start_date'],
-                $validated['end_date'],
-            );
 
-            return response()->json([
-                'stock_code' => $stockCode,
-                'points' => $grossFlow,
-                'meta' => [
-                    'unit' => 'IDR',
-                    'granularity' => $validated['granularity'] ?? 'daily',
-                ],
-            ]);
+            return PerformanceTracker::measure(
+                'ForeignBuyVsSellController@__invoke',
+                function () use ($validated, $stockCode): JsonResponse {
+                    $grossFlow = $this->service->getGrossFlow(
+                        $stockCode,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                    );
+
+                    return response()->json([
+                        'stock_code' => $stockCode,
+                        'points' => $grossFlow,
+                        'meta' => [
+                            'unit' => 'IDR',
+                            'granularity' => $validated['granularity'] ?? 'daily',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (ForeignBuyVsSellException $exception) {

@@ -4,7 +4,7 @@ namespace App\Features\HeatmapNetValue\Services;
 
 use App\Features\HeatmapNetValue\Contracts\HeatmapNetValueContract;
 use App\Features\HeatmapNetValue\Exceptions\HeatmapNetValueException;
-use Illuminate\Support\Collection;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Support\Facades\Log;
 
 final class HeatmapNetValueService
@@ -15,60 +15,65 @@ final class HeatmapNetValueService
 
     public function getHeatmapData(string $startDate, string $endDate): array
     {
-        try {
-            $rows = $this->repository->getHeatmapData($startDate, $endDate);
+        return PerformanceTracker::measure(
+            'HeatmapNetValueService@getHeatmapData',
+            function () use ($startDate, $endDate): array {
+                try {
+                    $rows = $this->repository->getHeatmapData($startDate, $endDate);
 
-            if ($rows->isEmpty()) {
-                return [
-                    'dates' => [],
-                    'stocks' => [],
-                    'cells' => [],
-                    'meta' => [
-                        'color_min' => 0,
-                        'color_max' => 0,
-                    ],
-                ];
-            }
+                    if ($rows->isEmpty()) {
+                        return [
+                            'dates' => [],
+                            'stocks' => [],
+                            'cells' => [],
+                            'meta' => [
+                                'color_min' => 0,
+                                'color_max' => 0,
+                            ],
+                        ];
+                    }
 
-            $netValues = $rows->map(fn ($row) => (float) $row->net_value);
-            $min = $netValues->min();
-            $max = $netValues->max();
-            $range = $max - $min;
+                    $netValues = $rows->map(fn ($row) => (float) $row->net_value);
+                    $min = $netValues->min();
+                    $max = $netValues->max();
+                    $range = $max - $min;
 
-            $dates = $this->repository->getDistinctDates($startDate, $endDate);
-            $stocks = $this->repository->getDistinctStocks($startDate, $endDate);
+                    $dates = $this->repository->getDistinctDates($startDate, $endDate);
+                    $stocks = $this->repository->getDistinctStocks($startDate, $endDate);
 
-            $cells = $rows
-                ->map(fn ($row) => [
-                    'date' => $this->dateString($row->netbs_date),
-                    'stock_code' => $row->stock_code,
-                    'net_value' => (int) $row->net_value,
-                    'normalized_value' => $range > 0
-                        ? round(($row->net_value - $min) / $range, 4)
-                        : 0.5,
-                ])
-                ->all();
+                    $cells = $rows
+                        ->map(fn ($row) => [
+                            'date' => $this->dateString($row->netbs_date),
+                            'stock_code' => $row->stock_code,
+                            'net_value' => (int) $row->net_value,
+                            'normalized_value' => $range > 0
+                                ? round(($row->net_value - $min) / $range, 4)
+                                : 0.5,
+                        ])
+                        ->all();
 
-            $maxAbs = max(abs($min), abs($max));
+                    $maxAbs = max(abs($min), abs($max));
 
-            return [
-                'dates' => $dates,
-                'stocks' => $stocks,
-                'cells' => $cells,
-                'meta' => [
-                    'color_min' => (int) -$maxAbs,
-                    'color_max' => (int) $maxAbs,
-                ],
-            ];
-        } catch (\Throwable $exception) {
-            Log::error('Failed to get heatmap net value', ['exception' => $exception]);
+                    return [
+                        'dates' => $dates,
+                        'stocks' => $stocks,
+                        'cells' => $cells,
+                        'meta' => [
+                            'color_min' => (int) -$maxAbs,
+                            'color_max' => (int) $maxAbs,
+                        ],
+                    ];
+                } catch (\Throwable $exception) {
+                    Log::error('Failed to get heatmap net value', ['exception' => $exception]);
 
-            throw new HeatmapNetValueException(
-                'Failed to get heatmap net value',
-                0,
-                $exception,
-            );
-        }
+                    throw new HeatmapNetValueException(
+                        'Failed to get heatmap net value',
+                        0,
+                        $exception,
+                    );
+                }
+            },
+        );
     }
 
     private function dateString(mixed $date): string

@@ -11,6 +11,14 @@ it('returns the heatmap payload with dates, stocks, cells, and meta', function (
                 (object) ['netbs_date' => '2026-07-17', 'stock_code' => 'BBRI', 'net_value' => '2500000000'],
                 (object) ['netbs_date' => '2026-07-18', 'stock_code' => 'TLKM', 'net_value' => '-1500000000'],
             ]));
+        $mock->shouldReceive('getDistinctDates')
+            ->once()
+            ->with('2026-07-17', '2026-07-18')
+            ->andReturn(['2026-07-17', '2026-07-18']);
+        $mock->shouldReceive('getDistinctStocks')
+            ->once()
+            ->with('2026-07-17', '2026-07-18')
+            ->andReturn(['BBRI', 'TLKM']);
     });
 
     $this->getJson('/api/v1/market/net-value-heatmap?start_date=2026-07-17&end_date=2026-07-18')

@@ -5,6 +5,7 @@ namespace App\Features\ForeignDomesticNetFlow\Http\Controller;
 use App\Features\ForeignDomesticNetFlow\Exceptions\ForeignDomesticNetFlowException;
 use App\Features\ForeignDomesticNetFlow\Services\ForeignDomesticNetFlowService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,20 +33,26 @@ final class ForeignDomesticNetFlowController extends Controller
             $validated = $validator->validate();
 
             $stockCode = strtoupper($validated['stock_code']);
-            $netFlow = $this->service->getNetFlow(
-                $stockCode,
-                $validated['start_date'],
-                $validated['end_date'],
-            );
 
-            return response()->json([
-                'stock_code' => $stockCode,
-                'points' => $netFlow,
-                'meta' => [
-                    'unit' => 'IDR',
-                    'granularity' => $validated['granularity'] ?? 'daily',
-                ],
-            ]);
+            return PerformanceTracker::measure(
+                'ForeignDomesticNetFlowController@__invoke',
+                function () use ($validated, $stockCode): JsonResponse {
+                    $netFlow = $this->service->getNetFlow(
+                        $stockCode,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                    );
+
+                    return response()->json([
+                        'stock_code' => $stockCode,
+                        'points' => $netFlow,
+                        'meta' => [
+                            'unit' => 'IDR',
+                            'granularity' => $validated['granularity'] ?? 'daily',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (ForeignDomesticNetFlowException $exception) {

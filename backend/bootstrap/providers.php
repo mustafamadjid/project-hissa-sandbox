@@ -7,11 +7,13 @@ use App\Providers\ForeignBuyVsSell\ForeignBuyVsSellServiceProvider;
 use App\Providers\ForeignDomesticNetFlow\ForeignDomesticNetFlowServiceProvider;
 use App\Providers\ForeignFlowVsNetValue\ForeignFlowVsNetValueServiceProvider;
 use App\Providers\HeatmapNetValue\HeatmapNetValueServiceProvider;
+use App\Providers\ObservabilityServiceProvider;
 use App\Providers\TopAccumulationDistribution\TopAccumulationDistributionServiceProvider;
 use App\Providers\TrenNetValue\TrenNetValueServiceProvider;
 
 return [
     AppServiceProvider::class,
+    ObservabilityServiceProvider::class,
     TopAccumulationDistributionServiceProvider::class,
     TrenNetValueServiceProvider::class,
     ForeignDomesticNetFlowServiceProvider::class,

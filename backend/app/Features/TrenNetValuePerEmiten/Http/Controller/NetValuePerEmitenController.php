@@ -5,6 +5,7 @@ namespace App\Features\TrenNetValuePerEmiten\Http\Controller;
 use App\Features\TrenNetValuePerEmiten\Exceptions\NetValuePerEmitenException;
 use App\Features\TrenNetValuePerEmiten\Services\NetValuePerEmitenService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -27,23 +28,28 @@ final class NetValuePerEmitenController extends Controller
             $validated = $validator->validate();
             $stockCode = strtoupper($stockCode);
 
-            $data = $this->service->getNetValuePerEmiten(
-                $stockCode,
-                $validated['start_date'],
-                $validated['end_date']
-            );
+            return PerformanceTracker::measure(
+                'NetValuePerEmitenController@__invoke',
+                function () use ($validated, $stockCode): JsonResponse {
+                    $data = $this->service->getNetValuePerEmiten(
+                        $stockCode,
+                        $validated['start_date'],
+                        $validated['end_date']
+                    );
 
-            return response()->json([
-                'stock_code' => $stockCode,
-                'period'     => [
-                    'start_date' => $validated['start_date'],
-                    'end_date'   => $validated['end_date']
-                ],
-                'points'     => $data,
-                'meta'       => [
-                    'unit'       => 'IDR',
-                ],
-            ]);
+                    return response()->json([
+                        'stock_code' => $stockCode,
+                        'period' => [
+                            'start_date' => $validated['start_date'],
+                            'end_date' => $validated['end_date'],
+                        ],
+                        'points' => $data,
+                        'meta' => [
+                            'unit' => 'IDR',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (NetValuePerEmitenException $exception) {

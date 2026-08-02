@@ -45,3 +45,4 @@ function openStockDetail(stockCode: string): void { void router.push({ name: "st
     <ForeignFlowScatterChart :model="scatterQuery.chartModel.value" :loading="scatterQuery.isPending.value" :fetching="scatterQuery.isFetching.value" :error="scatterQuery.errorMessage.value" @retry="scatterQuery.refetch()" @select-stock="openStockDetail" />
   </div>
 </template>
+ 

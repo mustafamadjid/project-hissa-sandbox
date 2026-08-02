@@ -13,7 +13,5 @@ class TrenNetValueServiceProvider extends ServiceProvider
         $this->app->bind(NetValuePerEmitenContract::class, EloquentNetValuePerEmiten::class);
     }
 
-    public function boot(): void
-    {
-    }
+    public function boot(): void {}
 }

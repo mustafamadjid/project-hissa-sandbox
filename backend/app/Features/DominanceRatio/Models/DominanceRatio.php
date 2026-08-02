@@ -8,5 +8,5 @@ final class DominanceRatio extends Model
 {
     protected $table = 'dominance_ratio';
 
-   	public $timestamps = false;
+    public $timestamps = false;
 }

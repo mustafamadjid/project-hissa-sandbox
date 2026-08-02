@@ -4,6 +4,7 @@ namespace App\Features\ForeignDomesticNetFlow\Repositories;
 
 use App\Features\ForeignDomesticNetFlow\Contracts\ForeignDomesticNetFlowContract;
 use App\Features\ForeignDomesticNetFlow\Models\ForeignDomesticNetFlow;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Support\Collection;
 use Override;
 
@@ -12,7 +13,9 @@ final class EloquentForeignDomesticNetFlow implements ForeignDomesticNetFlowCont
     #[Override]
     public function getNetFlow(string $stockCode, string $startDate, string $endDate): Collection
     {
-        return ForeignDomesticNetFlow::query()
+        return PerformanceTracker::measure(
+            'EloquentForeignDomesticNetFlow@getNetFlow',
+            fn (): Collection => ForeignDomesticNetFlow::query()
                 ->where('netbs_stock_code', $stockCode)
                 ->whereBetween('netbs_date', [$startDate, $endDate])
                 ->selectRaw('
@@ -22,6 +25,7 @@ final class EloquentForeignDomesticNetFlow implements ForeignDomesticNetFlowCont
                 ')
                 ->groupByRaw('DATE(netbs_date)')
                 ->orderBy('date')
-                ->get();
+                ->get(),
+        );
     }
 }

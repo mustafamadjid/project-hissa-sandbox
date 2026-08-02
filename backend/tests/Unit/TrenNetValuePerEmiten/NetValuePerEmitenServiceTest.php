@@ -32,7 +32,7 @@ it('logs error and throws NetValuePerEmitenException when repository fails', fun
     $repo = Mockery::mock(NetValuePerEmitenContract::class);
     $repo->shouldReceive('getNetValuePerEmiten')
         ->once()
-        ->andThrow(new \RuntimeException('DB down'));
+        ->andThrow(new RuntimeException('DB down'));
 
     App::instance(NetValuePerEmitenContract::class, $repo);
 
@@ -48,7 +48,7 @@ it('logs error and throws NetValuePerEmitenException when repository fails', fun
 });
 
 it('preserves previous exception in thrown NetValuePerEmitenException', function () {
-    $previous = new \RuntimeException('Connection timeout');
+    $previous = new RuntimeException('Connection timeout');
 
     $repo = Mockery::mock(NetValuePerEmitenContract::class);
     $repo->shouldReceive('getNetValuePerEmiten')

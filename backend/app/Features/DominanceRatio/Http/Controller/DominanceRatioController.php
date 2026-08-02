@@ -5,6 +5,7 @@ namespace App\Features\DominanceRatio\Http\Controller;
 use App\Features\DominanceRatio\Exceptions\DominanceRatioException;
 use App\Features\DominanceRatio\Services\DominanceRatioService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +13,6 @@ use Illuminate\Validation\ValidationException;
 
 final class DominanceRatioController extends Controller
 {
-
     public function __construct(
         private readonly DominanceRatioService $service,
     ) {}
@@ -30,19 +30,25 @@ final class DominanceRatioController extends Controller
             $stockCode = isset($validated['stock_code'])
                 ? strtoupper($validated['stock_code'])
                 : null;
-            $items = $this->service->getDominanceRatio(
-                $validated['start_date'],
-                $validated['end_date'],
-                $stockCode,
-            );
 
-            return response()->json([
-                'items' => $items,
-                'meta' => [
-                    'ratio_basis' => 'transaction_value',
-                    'unit' => 'percent',
-                ],
-            ]);
+            return PerformanceTracker::measure(
+                'DominanceRatioController@__invoke',
+                function () use ($validated, $stockCode): JsonResponse {
+                    $items = $this->service->getDominanceRatio(
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $stockCode,
+                    );
+
+                    return response()->json([
+                        'items' => $items,
+                        'meta' => [
+                            'ratio_basis' => 'transaction_value',
+                            'unit' => 'percent',
+                        ],
+                    ]);
+                },
+            );
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (DominanceRatioException $exception) {

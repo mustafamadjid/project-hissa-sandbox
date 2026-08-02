@@ -105,4 +105,3 @@ it('logs and wraps repository failures', function () {
     App::make(ForeignFlowVsNetValueService::class)
         ->getScatterData('2026-07-01', '2026-07-20', null, null);
 })->throws(ForeignFlowVsNetValueException::class, 'Failed to get foreign flow vs net value data');
-

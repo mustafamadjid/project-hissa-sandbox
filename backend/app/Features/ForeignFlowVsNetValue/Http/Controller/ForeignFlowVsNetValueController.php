@@ -5,6 +5,7 @@ namespace App\Features\ForeignFlowVsNetValue\Http\Controller;
 use App\Features\ForeignFlowVsNetValue\Exceptions\ForeignFlowVsNetValueException;
 use App\Features\ForeignFlowVsNetValue\Services\ForeignFlowVsNetValueService;
 use App\Http\Controllers\Controller;
+use App\Support\Observability\PerformanceTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,28 +33,33 @@ final class ForeignFlowVsNetValueController extends Controller
             $stockCodes = $this->stockCodes($validated['stock_codes'] ?? null);
             $minAbsValue = isset($validated['min_abs_value']) ? (float) $validated['min_abs_value'] : null;
 
-            $items = $this->service->getScatterData(
-                $validated['start_date'],
-                $validated['end_date'],
-                $stockCodes,
-                $minAbsValue,
+            return PerformanceTracker::measure(
+                'ForeignFlowVsNetValueController@__invoke',
+                function () use ($validated, $stockCodes, $minAbsValue): JsonResponse {
+                    $items = $this->service->getScatterData(
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $stockCodes,
+                        $minAbsValue,
+                    );
+
+                    if (isset($validated['limit'])) {
+                        $items = array_slice($items, 0, (int) $validated['limit']);
+                    }
+
+                    return response()->json([
+                        'period' => [
+                            'start_date' => $validated['start_date'],
+                            'end_date' => $validated['end_date'],
+                        ],
+                        'items' => $items,
+                        'meta' => [
+                            'unit' => 'IDR',
+                            'aggregation' => $validated['aggregation'] ?? 'sum',
+                        ],
+                    ]);
+                },
             );
-
-            if (isset($validated['limit'])) {
-                $items = array_slice($items, 0, (int) $validated['limit']);
-            }
-
-            return response()->json([
-                'period' => [
-                    'start_date' => $validated['start_date'],
-                    'end_date' => $validated['end_date'],
-                ],
-                'items' => $items,
-                'meta' => [
-                    'unit' => 'IDR',
-                    'aggregation' => $validated['aggregation'] ?? 'sum',
-                ],
-            ]);
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         } catch (ForeignFlowVsNetValueException $exception) {
