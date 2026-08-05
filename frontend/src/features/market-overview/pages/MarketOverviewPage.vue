@@ -7,6 +7,7 @@ import FilterBar from "@/shared/components/filters/FilterBar.vue";
 import DateRangeFilter from "@/shared/components/filters/DateRangeFilter.vue";
 import LimitSelect from "@/shared/components/filters/LimitSelect.vue";
 import StockCodeSelect from "@/shared/components/filters/StockCodeSelect.vue";
+import { useDebouncedRef } from "@/shared/composables/useDebouncedRef";
 import NetValueRankingChart from "@/features/market-overview/components/NetValueRankingChart.vue";
 import DominanceRatioChart from "@/features/market-overview/components/DominanceRatioChart.vue";
 import { useNetValueRankingQuery } from "@/features/market-overview/composables/useNetValueRankingQuery";
@@ -44,17 +45,18 @@ const stockCode = ref(
     ? normalizeStockCode(route.query.stock_code)
     : "",
 );
+const debouncedStockCode = useDebouncedRef(stockCode, 300);
 
 watch(
-  [startDate, endDate, limit, stockCode],
+  [startDate, endDate, limit, debouncedStockCode],
   () => {
     const query: Record<string, string> = {
       start_date: startDate.value,
       end_date: endDate.value,
       limit: String(limit.value),
     };
-    if (stockCode.value) {
-      query.stock_code = stockCode.value;
+    if (debouncedStockCode.value) {
+      query.stock_code = debouncedStockCode.value;
     }
     void router.replace({ query });
   },
@@ -76,8 +78,11 @@ const dominanceParams = computed(() => {
     start_date: startDate.value,
     end_date: endDate.value,
   };
-  if (stockCode.value && isValidStockCode(stockCode.value)) {
-    params.stock_code = stockCode.value;
+  if (
+    debouncedStockCode.value &&
+    isValidStockCode(debouncedStockCode.value)
+  ) {
+    params.stock_code = debouncedStockCode.value;
   }
   return params;
 });
