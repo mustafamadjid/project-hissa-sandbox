@@ -6,6 +6,7 @@ import DashboardGrid from "@/shared/components/layout/DashboardGrid.vue";
 import FilterBar from "@/shared/components/filters/FilterBar.vue";
 import DateRangeFilter from "@/shared/components/filters/DateRangeFilter.vue";
 import StockCodeSelect from "@/shared/components/filters/StockCodeSelect.vue";
+import { useDebouncedRef } from "@/shared/composables/useDebouncedRef";
 import NetValueTrendChart from "@/features/stock-detail/components/NetValueTrendChart.vue";
 import InvestorNetFlowChart from "@/features/stock-detail/components/InvestorNetFlowChart.vue";
 import ForeignGrossFlowChart from "@/features/stock-detail/components/ForeignGrossFlowChart.vue";
@@ -36,6 +37,7 @@ const stockCode = ref(
     typeof route.params.stockCode === "string" ? route.params.stockCode : "BBCA",
   ),
 );
+const debouncedStockCode = useDebouncedRef(stockCode, 300);
 const startDate = ref(readQueryString(route.query.start_date, defaultStartDate()));
 const endDate = ref(readQueryString(route.query.end_date, defaultEndDate()));
 
@@ -48,8 +50,8 @@ watch(
   },
 );
 
-watch([stockCode, startDate, endDate], () => {
-  const code = normalizeStockCode(stockCode.value);
+watch(debouncedStockCode, () => {
+  const code = normalizeStockCode(debouncedStockCode.value);
   if (!isValidStockCode(code)) return;
 
   void router.replace({
@@ -62,8 +64,19 @@ watch([stockCode, startDate, endDate], () => {
   });
 });
 
+watch([startDate, endDate], () => {
+  void router.replace({
+    name: "stock-detail",
+    params: route.params,
+    query: {
+      start_date: startDate.value,
+      end_date: endDate.value,
+    },
+  });
+});
+
 const sharedParams = computed(() => ({
-  stock_code: normalizeStockCode(stockCode.value),
+  stock_code: normalizeStockCode(debouncedStockCode.value),
   start_date: startDate.value,
   end_date: endDate.value,
 }));
