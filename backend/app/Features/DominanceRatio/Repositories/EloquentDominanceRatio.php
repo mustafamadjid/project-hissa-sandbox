@@ -23,6 +23,7 @@ final class EloquentDominanceRatio implements DominanceRatioContract
                     'Retail as retail',
                     'Mixed as mixed',
                 ])
+                ->when($stockCode, fn ($query) => $query->where('netbs_stock_code', $stockCode))
                 ->whereBetween('netbs_date', [$startDate, $endDate])
                 ->orderBy('netbs_date')
                 ->orderBy('stock_code')

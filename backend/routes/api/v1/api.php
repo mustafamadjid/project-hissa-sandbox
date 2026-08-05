@@ -1,5 +1,6 @@
 <?php
 
+use App\Features\AvailableStockCode\Http\Controller\AvailableStockCodeController;
 use App\Features\CumulativeNetValue\Http\Controller\CumulativeNetValueController;
 use App\Features\DominanceRatio\Http\Controller\DominanceRatioController;
 use App\Features\ForeignBuyVsSell\Http\Controller\ForeignBuyVsSellController;
@@ -16,6 +17,7 @@ Route::prefix('')->name('api.v1.')->middleware('throttle:ip')->group(function ()
     Route::get('/market/foreign-flow-net-value-scatter', ForeignFlowVsNetValueController::class);
     Route::get('/market/net-value-heatmap', HeatmapNetValueController::class);
     Route::get('/market/net-value-ranking', TopAccumulationDistributionController::class);
+    Route::get('/market/stock-codes', AvailableStockCodeController::class);
     Route::get('/market/stocks/{stock_code}/investor/net-flow', ForeignDomesticNetFlowController::class);
     Route::get('/market/stocks/{stock_code}/foreign/gross-flow', ForeignBuyVsSellController::class);
     Route::get('/market/dominance-ratio', DominanceRatioController::class);

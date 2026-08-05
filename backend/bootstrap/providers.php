@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Providers\AvailableStockCode\AvailableStockCodeServiceProvider;
 use App\Providers\CumulativeNetValue\CumulativeNetValueServiceProvider;
 use App\Providers\DominanceRatio\DominanceRatioServiceProvider;
 use App\Providers\ForeignBuyVsSell\ForeignBuyVsSellServiceProvider;
@@ -22,4 +23,5 @@ return [
     ForeignFlowVsNetValueServiceProvider::class,
     DominanceRatioServiceProvider::class,
     HeatmapNetValueServiceProvider::class,
+    AvailableStockCodeServiceProvider::class,
 ];

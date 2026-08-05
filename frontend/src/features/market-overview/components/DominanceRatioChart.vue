@@ -58,7 +58,7 @@ const showQualityWarning = computed(
       :loading="loading"
       :error="errorMessage"
       :empty="empty"
-      height="1000rem"
+      height="50rem"
       aria-label="Grafik dominance ratio institusi retail campuran"
       @retry="emit('retry')"
     />
