@@ -1,29 +1,33 @@
 import type { DateRangeParams } from "@/shared/types/api.types";
 
 export interface DominanceRatioParams extends DateRangeParams {
-  stock_code?: string;
+  stock_code: string;
+  granularity: "daily" | "weekly" | "monthly";
 }
 
-export interface DominanceRatioItemDto {
+export interface DominanceRatioPointDto {
   date: string;
-  stock_code: string;
-  institution: number;
-  retail: number;
-  mixed: number;
+  institution_ratio: number;
+  retail_ratio: number;
+  mixed_ratio: number;
   total_ratio: number;
 }
 
 export interface DominanceRatioResponseDto {
-  items: DominanceRatioItemDto[];
+  stock_code: string;
+  period: DateRangeParams;
+  granularity: DominanceRatioParams["granularity"];
+  points: DominanceRatioPointDto[];
   meta: {
     ratio_basis: "transaction_value";
     unit: "percent";
+    aggregation: "daily" | "latest";
+    timezone: string;
   };
 }
 
 export interface DominanceRatioSegmentModel {
   date: string;
-  stockCode: string;
   institution: number;
   retail: number;
   mixed: number;
@@ -33,6 +37,7 @@ export interface DominanceRatioSegmentModel {
 }
 
 export interface DominanceRatioChartModel {
+  stockCode: string;
   segments: DominanceRatioSegmentModel[];
   ratioBasis: "transaction_value";
   unit: "percent";

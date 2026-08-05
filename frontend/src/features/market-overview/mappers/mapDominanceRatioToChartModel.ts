@@ -23,21 +23,21 @@ export function isDominanceRatioOutOfTolerance(totalRatio: number): boolean {
 export function mapDominanceRatioToChartModel(
   dto: DominanceRatioResponseDto,
 ): DominanceRatioChartModel {
-  const segments: DominanceRatioSegmentModel[] = dto.items.map((item) => {
+  const segments: DominanceRatioSegmentModel[] = dto.points.map((item) => {
     const outOfTolerance = isDominanceRatioOutOfTolerance(item.total_ratio);
     return {
       date: item.date,
-      stockCode: item.stock_code,
-      institution: item.institution,
-      retail: item.retail,
-      mixed: item.mixed,
+      institution: item.institution_ratio,
+      retail: item.retail_ratio,
+      mixed: item.mixed_ratio,
       totalRatio: item.total_ratio,
       isTotalOutOfTolerance: outOfTolerance,
-      label: `${item.stock_code} · ${formatApiDateShort(item.date)}`,
+      label: formatApiDateShort(item.date),
     };
   });
 
   return {
+    stockCode: dto.stock_code,
     segments,
     ratioBasis: dto.meta.ratio_basis,
     unit: dto.meta.unit,
@@ -52,10 +52,10 @@ export function mapDominanceRatioToOption(
 
   return {
     grid: {
-      left: 132,
+      left: 64,
       right: 28,
       top: 44,
-      bottom: 28,
+      bottom: 72,
       containLabel: false,
     },
     legend: {
@@ -74,7 +74,7 @@ export function mapDominanceRatioToOption(
         if (!segment) return "";
 
         const lines = [
-          `<strong>${segment.stockCode}</strong> · ${segment.date}`,
+          `<strong>${model.stockCode}</strong> · ${segment.label}`,
           `Institusi: ${formatPercentRatio(segment.institution)}`,
           `Retail: ${formatPercentRatio(segment.retail)}`,
           `Campuran: ${formatPercentRatio(segment.mixed)}`,
@@ -88,27 +88,25 @@ export function mapDominanceRatioToOption(
       },
     },
     xAxis: {
-      type: "value",
-      max: 100,
+      type: "category",
+      data: categories,
       axisLabel: {
         color: CHART_PALETTE.axis,
-        formatter: (value: number) => `${value}%`,
+        rotate: categories.length > 15 ? 45 : 0,
       },
       splitLine: {
         lineStyle: { color: CHART_PALETTE.grid },
       },
     },
     yAxis: {
-      type: "category",
-      data: categories,
-      inverse: true,
+      type: "value",
+      min: 0,
+      max: 100,
+      name: "Persentase",
       axisLabel: {
-        color: CHART_PALETTE.text,
-        width: 120,
-        overflow: "truncate",
+        color: CHART_PALETTE.axis,
+        formatter: (value: number) => `${value}%`,
       },
-      axisTick: { show: false },
-      axisLine: { show: false },
     },
     series: [
       {
@@ -139,6 +137,10 @@ export function mapDominanceRatioToOption(
         barMaxWidth: BAR_MAX_WIDTH,
         label: { show: false },
       },
+    ],
+    dataZoom: [
+      { type: "inside", start: 0, end: 100 },
+      { type: "slider", start: 0, end: 100 },
     ],
   };
 }

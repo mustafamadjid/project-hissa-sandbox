@@ -1,19 +1,23 @@
 import { z } from "zod";
 
-export const dominanceRatioItemSchema = z.object({
+export const dominanceRatioPointSchema = z.object({
   date: z.string(),
-  stock_code: z.string(),
-  institution: z.number(),
-  retail: z.number(),
-  mixed: z.number(),
+  institution_ratio: z.number(),
+  retail_ratio: z.number(),
+  mixed_ratio: z.number(),
   total_ratio: z.number(),
 });
 
 export const dominanceRatioResponseSchema = z.object({
-  items: z.array(dominanceRatioItemSchema),
+  stock_code: z.string(),
+  period: z.object({ start_date: z.string(), end_date: z.string() }),
+  granularity: z.enum(["daily", "weekly", "monthly"]),
+  points: z.array(dominanceRatioPointSchema),
   meta: z.object({
     ratio_basis: z.literal("transaction_value"),
     unit: z.literal("percent"),
+    aggregation: z.enum(["daily", "latest"]),
+    timezone: z.string(),
   }),
 });
 

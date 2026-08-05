@@ -18,7 +18,6 @@ import {
 } from "@/shared/utils/date-defaults";
 import { isValidDateRange } from "@/shared/formatters/date";
 import {
-  isValidStockCode,
   normalizeStockCode,
 } from "@/shared/utils/stock-code";
 
@@ -40,6 +39,11 @@ function readQueryNumber(value: unknown, fallback: number): number {
 const startDate = ref(readQueryString(route.query.start_date, defaultStartDate()));
 const endDate = ref(readQueryString(route.query.end_date, defaultEndDate()));
 const limit = ref(readQueryNumber(route.query.limit, 10));
+const granularity = ref<"daily" | "weekly" | "monthly">(
+  route.query.granularity === "weekly" || route.query.granularity === "monthly"
+    ? route.query.granularity
+    : "daily",
+);
 const stockCode = ref(
   typeof route.query.stock_code === "string"
     ? normalizeStockCode(route.query.stock_code)
@@ -48,12 +52,13 @@ const stockCode = ref(
 const debouncedStockCode = useDebouncedRef(stockCode, 300);
 
 watch(
-  [startDate, endDate, limit, debouncedStockCode],
+  [startDate, endDate, limit, granularity, debouncedStockCode],
   () => {
     const query: Record<string, string> = {
       start_date: startDate.value,
       end_date: endDate.value,
       limit: String(limit.value),
+      granularity: granularity.value,
     };
     if (debouncedStockCode.value) {
       query.stock_code = debouncedStockCode.value;
@@ -70,21 +75,12 @@ const rankingParams = computed(() => ({
 }));
 
 const dominanceParams = computed(() => {
-  const params: {
-    start_date: string;
-    end_date: string;
-    stock_code?: string;
-  } = {
+  return {
     start_date: startDate.value,
     end_date: endDate.value,
+    stock_code: debouncedStockCode.value,
+    granularity: granularity.value,
   };
-  if (
-    debouncedStockCode.value &&
-    isValidStockCode(debouncedStockCode.value)
-  ) {
-    params.stock_code = debouncedStockCode.value;
-  }
-  return params;
 });
 
 const rankingQuery = useNetValueRankingQuery(rankingParams);
@@ -124,9 +120,17 @@ function openStockDetail(code: string): void {
       <StockCodeSelect
         v-model="stockCode"
         class="w-full sm:w-40"
-        label="Filter saham (opsional)"
-        placeholder="Semua"
+        label="Saham"
+        placeholder="UNVR"
       />
+      <div class="w-full sm:w-36">
+        <label class="label" for="dominance-granularity">Granularity</label>
+        <select id="dominance-granularity" v-model="granularity" class="input">
+          <option value="daily">Harian</option>
+          <option value="weekly">Mingguan</option>
+          <option value="monthly">Bulanan</option>
+        </select>
+      </div>
     </FilterBar>
 
     <p

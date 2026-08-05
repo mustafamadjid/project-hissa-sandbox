@@ -300,14 +300,19 @@ paths:
       tags: [Market Analysis]
       operationId: getDominanceRatio
       summary: Get investor dominance ratio
-      description: Retrieves institutional, retail, and mixed ratios. total_ratio is the sum of all three values.
+      description: Retrieves timeline institutional, retail, and mixed ratios for one stock. total_ratio is the sum of all three values.
       parameters:
         - $ref: "#/components/parameters/StartDate"
         - $ref: "#/components/parameters/EndDate"
         - name: stock_code
           in: query
-          description: Optional stock code with a maximum length of 10 characters.
-          schema: { type: string, maxLength: 10 }
+          required: true
+          description: Single stock code with a maximum length of 20 characters.
+          schema: { type: string, maxLength: 20 }
+        - name: granularity
+          in: query
+          description: Timeline resolution. Weekly and monthly return latest observation in each bucket.
+          schema: { type: string, enum: [daily, weekly, monthly], default: daily }
       responses:
         "200":
           description: The dominance ratio was retrieved successfully.
@@ -315,18 +320,20 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/DominanceRatioResponse" }
               example:
-                items:
+                stock_code: BBCA
+                period: { start_date: "2026-07-01", end_date: "2026-07-01" }
+                granularity: daily
+                points:
                   [
                     {
                       date: "2026-07-01",
-                      stock_code: BBCA,
-                      institution: 52.5,
-                      retail: 35,
-                      mixed: 12.5,
+                      institution_ratio: 52.5,
+                      retail_ratio: 35,
+                      mixed_ratio: 12.5,
                       total_ratio: 100,
                     },
                   ]
-                meta: { ratio_basis: transaction_value, unit: percent }
+                meta: { ratio_basis: transaction_value, unit: percent, aggregation: daily, timezone: Asia/Jakarta }
         "422": { $ref: "#/components/responses/ValidationError" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/InternalServerError" }
@@ -609,31 +616,40 @@ components:
             items: { $ref: "#/components/schemas/ForeignGrossFlowPoint" },
           }
         meta: { $ref: "#/components/schemas/DailyIdMeta" }
-    DominanceRatioItem:
+    DominanceRatioPoint:
       type: object
-      required: [date, stock_code, institution, retail, mixed, total_ratio]
+      required: [date, institution_ratio, retail_ratio, mixed_ratio, total_ratio]
       properties:
         date: { type: string, format: date }
-        stock_code: { type: string }
-        institution: { type: number, format: double }
-        retail: { type: number, format: double }
-        mixed: { type: number, format: double }
+        institution_ratio: { type: number, format: double, minimum: 0 }
+        retail_ratio: { type: number, format: double, minimum: 0 }
+        mixed_ratio: { type: number, format: double, minimum: 0 }
         total_ratio: { type: number, format: double }
     DominanceRatioResponse:
       type: object
-      required: [items, meta]
+      required: [stock_code, period, granularity, points, meta]
       properties:
-        items:
+        stock_code: { type: string }
+        period:
+          type: object
+          required: [start_date, end_date]
+          properties:
+            start_date: { type: string, format: date }
+            end_date: { type: string, format: date }
+        granularity: { type: string, enum: [daily, weekly, monthly] }
+        points:
           {
             type: array,
-            items: { $ref: "#/components/schemas/DominanceRatioItem" },
+            items: { $ref: "#/components/schemas/DominanceRatioPoint" },
           }
         meta:
           type: object
-          required: [ratio_basis, unit]
+          required: [ratio_basis, unit, aggregation, timezone]
           properties:
             ratio_basis: { type: string, enum: [transaction_value] }
             unit: { type: string, enum: [percent] }
+            aggregation: { type: string, enum: [daily, latest] }
+            timezone: { type: string, example: Asia/Jakarta }
     ValidationError:
       type: object
       required: [success, message, errors]

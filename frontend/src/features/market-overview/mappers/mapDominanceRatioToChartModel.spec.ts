@@ -21,25 +21,31 @@ describe("isDominanceRatioOutOfTolerance", () => {
 
 describe("mapDominanceRatioToChartModel", () => {
   const sample: DominanceRatioResponseDto = {
-    items: [
+    stock_code: "BBCA",
+    period: { start_date: "2026-07-01", end_date: "2026-07-02" },
+    granularity: "daily",
+    points: [
       {
         date: "2026-07-01",
-        stock_code: "BBCA",
-        institution: 52.5,
-        retail: 35,
-        mixed: 12.5,
+        institution_ratio: 52.5,
+        retail_ratio: 35,
+        mixed_ratio: 12.5,
         total_ratio: 100,
       },
       {
         date: "2026-07-02",
-        stock_code: "BBRI",
-        institution: 40,
-        retail: 40,
-        mixed: 10,
+        institution_ratio: 40,
+        retail_ratio: 40,
+        mixed_ratio: 10,
         total_ratio: 90,
       },
     ],
-    meta: { ratio_basis: "transaction_value", unit: "percent" },
+    meta: {
+      ratio_basis: "transaction_value",
+      unit: "percent",
+      aggregation: "daily",
+      timezone: "Asia/Jakarta",
+    },
   };
 
   it("maps segments and quality warning without renormalizing", () => {
@@ -55,5 +61,7 @@ describe("mapDominanceRatioToChartModel", () => {
     const option = mapDominanceRatioToOption(model);
     const series = option.series as unknown[];
     expect(series).toHaveLength(3);
+    expect(option.xAxis).toMatchObject({ type: "category" });
+    expect(option.yAxis).toMatchObject({ type: "value", min: 0, max: 100 });
   });
 });

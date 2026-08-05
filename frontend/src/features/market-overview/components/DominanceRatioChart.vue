@@ -58,13 +58,13 @@ const showQualityWarning = computed(
       :loading="loading"
       :error="errorMessage"
       :empty="empty"
-      height="50rem"
+      height="32rem"
       aria-label="Grafik dominance ratio institusi retail campuran"
       @retry="emit('retry')"
     />
     <template v-if="model" #footer>
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        Basis: nilai transaksi · Unit: persen
+        {{ model.stockCode }} · Basis: nilai transaksi · Unit: persen
       </p>
     </template>
   </ChartCard>

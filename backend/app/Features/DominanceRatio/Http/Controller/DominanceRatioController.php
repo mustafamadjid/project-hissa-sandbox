@@ -20,33 +20,32 @@ final class DominanceRatioController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         try {
+            if (is_string($request->query('stock_code'))) {
+                $request->query->set('stock_code', trim($request->query('stock_code')));
+            }
+
             $validator = Validator::make($request->query(), [
                 'start_date' => ['required', 'date_format:Y-m-d'],
                 'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-                'stock_code' => ['nullable', 'string', 'max:10'],
+                'stock_code' => ['required', 'string', 'regex:/^[A-Za-z0-9]{1,20}$/'],
+                'granularity' => ['sometimes', 'string', 'in:daily,weekly,monthly'],
             ]);
 
             $validated = $validator->validate();
-            $stockCode = isset($validated['stock_code'])
-                ? strtoupper($validated['stock_code'])
-                : null;
+            $stockCode = strtoupper($validated['stock_code']);
+            $granularity = $validated['granularity'] ?? 'daily';
 
             return PerformanceTracker::measure(
                 'DominanceRatioController@__invoke',
-                function () use ($validated, $stockCode): JsonResponse {
-                    $items = $this->service->getDominanceRatio(
+                function () use ($validated, $stockCode, $granularity): JsonResponse {
+                    $response = $this->service->getDominanceRatio(
+                        $stockCode,
                         $validated['start_date'],
                         $validated['end_date'],
-                        $stockCode,
+                        $granularity,
                     );
 
-                    return response()->json([
-                        'items' => $items,
-                        'meta' => [
-                            'ratio_basis' => 'transaction_value',
-                            'unit' => 'percent',
-                        ],
-                    ]);
+                    return response()->json($response);
                 },
             );
         } catch (ValidationException $exception) {

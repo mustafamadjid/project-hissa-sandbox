@@ -16,6 +16,7 @@ export async function fetchDominanceRatio(
         start_date: params.start_date,
         end_date: params.end_date,
         stock_code: params.stock_code,
+        granularity: params.granularity,
       }),
       ...withRequestSignal(signal),
     });

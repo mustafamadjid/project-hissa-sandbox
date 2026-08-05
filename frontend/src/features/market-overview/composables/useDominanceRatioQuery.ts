@@ -19,10 +19,7 @@ export function isValidDominanceRatioParams(
   if (!isValidDateRange(params.start_date, params.end_date)) {
     return false;
   }
-  if (params.stock_code !== undefined && params.stock_code !== "") {
-    return isValidStockCode(params.stock_code);
-  }
-  return true;
+  return isValidStockCode(params.stock_code);
 }
 
 export function useDominanceRatioQuery(
