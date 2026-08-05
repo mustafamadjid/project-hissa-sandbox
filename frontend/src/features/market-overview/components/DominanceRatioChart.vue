@@ -33,9 +33,7 @@ watch(
 
 const empty = computed(
   () =>
-    !props.loading &&
-    !props.error &&
-    (props.model?.segments.length ?? 0) === 0,
+    !props.loading && !props.error && (props.model?.segments.length ?? 0) === 0,
 );
 
 const errorMessage = computed(() => props.error ?? null);
@@ -51,12 +49,8 @@ const showQualityWarning = computed(
     :description="DESCRIPTION"
     :fetching="fetching && !loading"
   >
-    <div
-      v-if="showQualityWarning"
-      class="status-warning mb-3"
-      role="status"
-    >
-      Beberapa baris memiliki total rasio di luar toleransi 99.5–100.5%. Data
+    <div v-if="showQualityWarning" class="status-warning mb-3" role="status">
+      Beberapa baris memiliki total rasio di luar toleransi 99.5-100.5%. Data
       ditampilkan apa adanya tanpa normalisasi ulang.
     </div>
     <BaseChart
@@ -64,7 +58,7 @@ const showQualityWarning = computed(
       :loading="loading"
       :error="errorMessage"
       :empty="empty"
-      height="36rem"
+      height="60rem"
       aria-label="Grafik dominance ratio institusi retail campuran"
       @retry="emit('retry')"
     />
